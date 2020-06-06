@@ -27,7 +27,11 @@ export const servicePrices: ServicePrice[] = [
       { year: 2021, price: 1800 },
       { year: 2022, price: 1900 },
     ],
-    discounts: [],
+    discounts: [
+      { requiredService: 'VideoRecording', requiredYear: 2020, discount: 1200 },
+      { requiredService: 'VideoRecording', requiredYear: 2021, discount: 1300 },
+      { requiredService: 'VideoRecording', requiredYear: 2022, discount: 1300 },
+    ],
   },
   {
     service: 'VideoRecording',
@@ -36,7 +40,11 @@ export const servicePrices: ServicePrice[] = [
       { year: 2021, price: 1800 },
       { year: 2022, price: 1900 },
     ],
-    discounts: [],
+    discounts: [
+      { requiredService: 'Photography', requiredYear: 2020, discount: 1200 },
+      { requiredService: 'Photography', requiredYear: 2021, discount: 1300 },
+      { requiredService: 'Photography', requiredYear: 2022, discount: 1300 },
+    ],
   },
   {
     service: 'WeddingSession',
@@ -146,7 +154,7 @@ export const calculatePrice = (
     );
 
     if (!servicePrice) {
-      return { service: selectedService, price: 0, priceWithDiscount: 0 };
+      return { service: selectedService, price: 0, discount: 0 };
     }
     const priceDetails = servicePrice.prices.find(
       (price) => price.year === selectedYear || !price.year
@@ -166,16 +174,15 @@ export const calculatePrice = (
     return {
       service: selectedService,
       price: priceDetails.price,
-      priceWithDiscount: priceDetails.price - maxDiscount,
+      discount: maxDiscount,
     };
   });
   let totalBasePrice = servicePricePair
     .map((x) => x.price)
     .reduce((prevValue, currentValue) => prevValue + currentValue, 0);
 
-  let totalFinalPrice = servicePricePair
-    .map((x) => x.priceWithDiscount)
-    .reduce((prevValue, currentValue) => prevValue + currentValue, 0);
+  let totalFinalPrice =
+    totalBasePrice - Math.max(...servicePricePair.map((x) => x.discount));
 
   return { basePrice: totalBasePrice, finalPrice: totalFinalPrice };
 };
