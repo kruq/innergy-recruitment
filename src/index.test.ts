@@ -244,7 +244,7 @@ describe.each([
   }
 );
 
-xdescribe.each([
+describe.each([
   [2020, 300],
   [2021, 300],
   [2022, 0],
