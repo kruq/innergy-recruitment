@@ -20,13 +20,13 @@ export type Discount = {
 };
 export type PriceDetails = { year?: ServiceYear; price: number };
 export type ServicePrice = {
-  service: ServiceType;
+  services: ServiceType[];
   prices: PriceDetails[];
   discounts: Discount[];
 };
 export const servicePrices: ServicePrice[] = [
   {
-    service: 'Photography',
+    services: ['Photography'],
     prices: [
       { year: 2020, price: 1700 },
       { year: 2021, price: 1800 },
@@ -51,7 +51,7 @@ export const servicePrices: ServicePrice[] = [
     ],
   },
   {
-    service: 'VideoRecording',
+    services: ['VideoRecording'],
     prices: [
       { year: 2020, price: 1700 },
       { year: 2021, price: 1800 },
@@ -76,7 +76,7 @@ export const servicePrices: ServicePrice[] = [
     ],
   },
   {
-    service: 'WeddingSession',
+    services: ['WeddingSession'],
     prices: [{ price: 600 }],
     discounts: [
       { requiredService: 'Photography', discountValue: 300 },
@@ -89,13 +89,13 @@ export const servicePrices: ServicePrice[] = [
     ],
   },
   {
-    service: 'BlurayPackage',
+    services: ['BlurayPackage'],
     prices: [{ price: 300 }],
     discounts: [],
   },
   ,
   {
-    service: 'TwoDayEvent',
+    services: ['TwoDayEvent'],
     prices: [{ price: 400 }],
     discounts: [],
   },
@@ -171,7 +171,11 @@ export const calculatePrice = (
   }
 
   const prices = servicePrices
-    .filter((servicePrice) => selectedServices.includes(servicePrice.service))
+    .filter(
+      (servicePrice) =>
+        servicePrice.services.sort().join(';') ==
+        selectedServices.sort().join(';')
+    )
     .map(
       (servicePrice) =>
         servicePrice.prices.find(
@@ -180,7 +184,11 @@ export const calculatePrice = (
     );
 
   const discounts = servicePrices
-    .filter((servicePrice) => selectedServices.includes(servicePrice.service))
+    .filter(
+      (servicePrice) =>
+        servicePrice.services.sort().join(';') ==
+        selectedServices.sort().join(';')
+    )
     .map((servicePrice) =>
       servicePrice.discounts
         .filter(
