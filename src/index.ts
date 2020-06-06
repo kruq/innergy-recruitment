@@ -13,6 +13,11 @@ export const hierarchy: Relation[] = [
   { parent: 'Photography', child: 'TwoDayEvent' },
 ];
 
+export type Discount = {
+  requiredService: ServiceType;
+  requiredYear?: ServiceYear;
+  discountValue: number;
+};
 export type PriceDetails = { year?: ServiceYear; price: number };
 export type ServicePrice = {
   service: ServiceType;
@@ -28,9 +33,21 @@ export const servicePrices: ServicePrice[] = [
       { year: 2022, price: 1900 },
     ],
     discounts: [
-      { requiredService: 'VideoRecording', requiredYear: 2020, discount: 1200 },
-      { requiredService: 'VideoRecording', requiredYear: 2021, discount: 1300 },
-      { requiredService: 'VideoRecording', requiredYear: 2022, discount: 1300 },
+      {
+        requiredService: 'VideoRecording',
+        requiredYear: 2020,
+        discountValue: 1200,
+      },
+      {
+        requiredService: 'VideoRecording',
+        requiredYear: 2021,
+        discountValue: 1300,
+      },
+      {
+        requiredService: 'VideoRecording',
+        requiredYear: 2022,
+        discountValue: 1300,
+      },
     ],
   },
   {
@@ -41,18 +58,34 @@ export const servicePrices: ServicePrice[] = [
       { year: 2022, price: 1900 },
     ],
     discounts: [
-      { requiredService: 'Photography', requiredYear: 2020, discount: 1200 },
-      { requiredService: 'Photography', requiredYear: 2021, discount: 1300 },
-      { requiredService: 'Photography', requiredYear: 2022, discount: 1300 },
+      {
+        requiredService: 'Photography',
+        requiredYear: 2020,
+        discountValue: 1200,
+      },
+      {
+        requiredService: 'Photography',
+        requiredYear: 2021,
+        discountValue: 1300,
+      },
+      {
+        requiredService: 'Photography',
+        requiredYear: 2022,
+        discountValue: 1300,
+      },
     ],
   },
   {
     service: 'WeddingSession',
     prices: [{ price: 600 }],
     discounts: [
-      { requiredService: 'Photography', discount: 300 },
-      { requiredService: 'VideoRecording', discount: 300 },
-      { requiredService: 'Photography', requiredYear: 2022, discount: 600 },
+      { requiredService: 'Photography', discountValue: 300 },
+      { requiredService: 'VideoRecording', discountValue: 300 },
+      {
+        requiredService: 'Photography',
+        requiredYear: 2022,
+        discountValue: 600,
+      },
     ],
   },
   {
@@ -67,17 +100,6 @@ export const servicePrices: ServicePrice[] = [
     discounts: [],
   },
 ];
-
-export type Discount = {
-  requiredService: ServiceType;
-  requiredYear?: ServiceYear;
-  discount: number;
-};
-// export type Discount = { requiredServices: ServiceType[]; discount: number };
-// export const discounts: Discount[] = [
-//   { requiredServices: ['Photography', 'VideoRecording'], discount: 300 },
-//   { requiredServices: ['Photography'], discount: }
-// ];
 
 export const updateSelectedServices = (
   previouslySelectedServices: ServiceType[],
@@ -148,41 +170,35 @@ export const calculatePrice = (
     return { basePrice: 0, finalPrice: 0 };
   }
 
-  const servicePricePair = selectedServices.map((selectedService) => {
-    const servicePrice = servicePrices.find(
-      (servicePrice) => servicePrice.service === selectedService
+  const prices = servicePrices
+    .filter((servicePrice) => selectedServices.includes(servicePrice.service))
+    .map(
+      (servicePrice) =>
+        servicePrice.prices.find(
+          (price) => !price.year || price.year === selectedYear
+        ).price
     );
 
-    if (!servicePrice) {
-      return { service: selectedService, price: 0, discount: 0 };
-    }
-    const priceDetails = servicePrice.prices.find(
-      (price) => price.year === selectedYear || !price.year
-    );
+  const discounts = servicePrices
+    .filter((servicePrice) => selectedServices.includes(servicePrice.service))
+    .map((servicePrice) =>
+      servicePrice.discounts
+        .filter(
+          (discount) =>
+            selectedServices.includes(discount.requiredService) &&
+            (!discount.requiredYear || discount.requiredYear == selectedYear)
+        )
+        .map((discount) => discount.discountValue)
+        .concat([0])
+    )
+    .reduce((prevValue, currentValue) => prevValue.concat(currentValue), []);
 
-    const foundDiscounts = servicePrice.discounts
-      .filter(
-        (x) =>
-          selectedServices.includes(x.requiredService) &&
-          (!x.requiredYear || x.requiredYear == selectedYear)
-      )
-      .map((x) => x.discount)
-      .concat(0);
+  let totalBasePrice = prices.reduce(
+    (prevValue, currentValue) => prevValue + currentValue,
+    0
+  );
 
-    const maxDiscount = Math.max(...foundDiscounts);
-
-    return {
-      service: selectedService,
-      price: priceDetails.price,
-      discount: maxDiscount,
-    };
-  });
-  let totalBasePrice = servicePricePair
-    .map((x) => x.price)
-    .reduce((prevValue, currentValue) => prevValue + currentValue, 0);
-
-  let totalFinalPrice =
-    totalBasePrice - Math.max(...servicePricePair.map((x) => x.discount));
+  let totalFinalPrice = totalBasePrice - Math.max(...discounts);
 
   return { basePrice: totalBasePrice, finalPrice: totalFinalPrice };
 };
