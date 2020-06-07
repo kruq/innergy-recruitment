@@ -22,7 +22,7 @@ export type PriceDetails = { year?: ServiceYear; price: number };
 export type ServicePrice = {
   services: ServiceType[];
   prices: PriceDetails[];
-  discounts: Discount[];
+  discounts?: Discount[];
 };
 export const servicePrices: ServicePrice[] = [
   {
@@ -32,23 +32,6 @@ export const servicePrices: ServicePrice[] = [
       { year: 2021, price: 1800 },
       { year: 2022, price: 1900 },
     ],
-    discounts: [
-      {
-        requiredService: 'VideoRecording',
-        requiredYear: 2020,
-        discountValue: 1200,
-      },
-      {
-        requiredService: 'VideoRecording',
-        requiredYear: 2021,
-        discountValue: 1300,
-      },
-      {
-        requiredService: 'VideoRecording',
-        requiredYear: 2022,
-        discountValue: 1300,
-      },
-    ],
   },
   {
     services: ['VideoRecording'],
@@ -57,23 +40,16 @@ export const servicePrices: ServicePrice[] = [
       { year: 2021, price: 1800 },
       { year: 2022, price: 1900 },
     ],
-    discounts: [
-      {
-        requiredService: 'Photography',
-        requiredYear: 2020,
-        discountValue: 1200,
-      },
-      {
-        requiredService: 'Photography',
-        requiredYear: 2021,
-        discountValue: 1300,
-      },
-      {
-        requiredService: 'Photography',
-        requiredYear: 2022,
-        discountValue: 1300,
-      },
+    discounts: [],
+  },
+  {
+    services: ['Photography', 'VideoRecording'],
+    prices: [
+      { year: 2020, price: 2200 },
+      { year: 2021, price: 2300 },
+      { year: 2022, price: 2500 },
     ],
+    discounts: [],
   },
   {
     services: ['WeddingSession'],
@@ -93,7 +69,6 @@ export const servicePrices: ServicePrice[] = [
     prices: [{ price: 300 }],
     discounts: [],
   },
-  ,
   {
     services: ['TwoDayEvent'],
     prices: [{ price: 400 }],
@@ -162,46 +137,58 @@ const canSelectChild = (
   return canAddChildService;
 };
 
+export type CalculatedPrice = { basePrice: number; finalPrice: number };
+
 export const calculatePrice = (
   selectedServices: ServiceType[],
   selectedYear: ServiceYear
-) => {
+): CalculatedPrice => {
   if (!selectedServices.length) {
     return { basePrice: 0, finalPrice: 0 };
   }
+  let foundServices: ServicePrice[] = [];
 
-  const prices = servicePrices
-    .filter(
-      (servicePrice) =>
-        servicePrice.services.sort().join(';') ==
-        selectedServices.sort().join(';')
+  let remainingServicesToCheck = [...selectedServices];
+  servicePrices
+    .sort(
+      (service1, service2) =>
+        service2.services.length - service1.services.length
     )
-    .map(
-      (servicePrice) =>
-        servicePrice.prices.find(
-          (price) => !price.year || price.year === selectedYear
-        ).price
-    );
+    .forEach((servicePrice) => {
+      var covers = servicePrice.services.every((service) =>
+        remainingServicesToCheck.includes(service)
+      );
+      if (covers) {
+        foundServices.push(servicePrice);
+        servicePrice.services.forEach((service) =>
+          remainingServicesToCheck.splice(
+            remainingServicesToCheck.indexOf(service),
+            1
+          )
+        );
+      }
+    });
 
-  const discounts = servicePrices
-    .filter(
-      (servicePrice) =>
-        servicePrice.services.sort().join(';') ==
-        selectedServices.sort().join(';')
-    )
-    .map((servicePrice) =>
-      servicePrice.discounts
-        .filter(
-          (discount) =>
-            selectedServices.includes(discount.requiredService) &&
-            (!discount.requiredYear || discount.requiredYear == selectedYear)
-        )
-        .map((discount) => discount.discountValue)
-        .concat([0])
+  var prices2 = foundServices.map(
+    (x) =>
+      x.prices.find((price) => !price.year || price.year === selectedYear).price
+  );
+
+  const discounts = foundServices
+    .map((x) =>
+      [0].concat(
+        x.discounts
+          ?.filter(
+            (discount) =>
+              selectedServices.includes(discount.requiredService) &&
+              (!discount.requiredYear || discount.requiredYear == selectedYear)
+          )
+          .map((discount) => discount.discountValue) || []
+      )
     )
     .reduce((prevValue, currentValue) => prevValue.concat(currentValue), []);
 
-  let totalBasePrice = prices.reduce(
+  let totalBasePrice = prices2.reduce(
     (prevValue, currentValue) => prevValue + currentValue,
     0
   );
